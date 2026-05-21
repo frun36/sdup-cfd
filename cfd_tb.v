@@ -4,26 +4,28 @@ module tb_cfd;
     parameter BIT_WIDTH = 12;
     parameter DELAY = 10;
     parameter SCALE_SHIFT = 1;
+    parameter CFD_THR = 100;
 
     reg clk;
     reg rst;
     reg  [BIT_WIDTH-1:0] din;
-    wire [BIT_WIDTH:0]   dout;
+    wire pulse;
 
     integer fd_in;
     integer fd_out;
     integer status;
     integer val_read;
 
-    cfd #(
+    top #(
         .BIT_WIDTH(BIT_WIDTH),
         .DELAY(DELAY),
-        .SCALE_SHIFT(SCALE_SHIFT)
+        .SCALE_SHIFT(SCALE_SHIFT),
+        .CFD_THR(CFD_THR)
     ) uut (
         .clk(clk),
         .rst(rst),
         .din(din),
-        .dout(dout)
+        .pulse(pulse)
     );
 
     // Clock (2GHz)
@@ -46,7 +48,7 @@ module tb_cfd;
             $display("Error: Could not create output.csv");
             $finish;
         end
-        $fdisplay(fd_out, "time_ns,din,dout");
+        $fdisplay(fd_out, "time_ns,din,dout,pulse");
 
         rst = 1;
         din = 0;
@@ -57,7 +59,7 @@ module tb_cfd;
             status = $fscanf(fd_in, "%d", val_read);
             if (status == 1) begin
                 din = val_read;
-                $fdisplay(fd_out, "%0f,%d,%d", $realtime, din, $signed(dout));
+                $fdisplay(fd_out, "%0f,%d,%d,%d", $realtime, din, $signed(uut.dout), pulse);
             end
         end
 
@@ -65,7 +67,7 @@ module tb_cfd;
         repeat (DELAY + 2) begin
             @(negedge clk);
             din = 0;
-            $fdisplay(fd_out, "%0f,%d,%d", $realtime, din, $signed(dout));
+            $fdisplay(fd_out, "%0f,%d,%d,%d", $realtime, din, $signed(uut.dout), pulse);
         end
 
         $fclose(fd_in);

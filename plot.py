@@ -7,12 +7,16 @@ df = pd.read_csv('output.csv', sep=',')
 t = df['time_ns']
 din = df['din']
 dout = df['dout']
+pulse = df['pulse']
 
-plt.figure(figsize=(16, 4))
+
+for x, p in zip(t, pulse):
+    if p == 1:
+        plt.axvline(x=x, color='green')
 x_max = int(np.max(t))
 
-plt.plot(t, din, label='p', color='blue', linestyle='--')
-plt.plot(t, dout, label='sum', color='purple')
+plt.plot(t, din, label='p', color='blue')
+plt.plot(t, dout, label='sum', color='purple', linestyle='--')
 
 plt.xlabel('t')
 plt.ylabel('V')
