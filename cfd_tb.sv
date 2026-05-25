@@ -2,17 +2,18 @@
 
 module cfd_tb;
   parameter integer BIT_WIDTH = 12;
-  parameter integer DELAY = 10;
+  parameter integer DELAY = 4;
   parameter integer SCALE_SHIFT = 1;
   parameter integer CFD_THR = 100;
   parameter integer DATA_MUX = 16;
+  parameter real ADC_PERIOD_NS = 0.5;
 
   reg                     clk;
   reg                     rst;
 
   // SystemVerilog Unpacked Arrays for ports
   reg     [BIT_WIDTH-1:0] din      [DATA_MUX];
-  wire                    pulse;
+  wire                    pulse    [DATA_MUX];
 
   integer                 fd_in;
   integer                 fd_out;
@@ -37,7 +38,7 @@ module cfd_tb;
   // Clock (2GHz / DATA_MUX = 125MHz)
   initial begin
     clk = 0;
-    forever #4 clk = ~clk;
+    forever #(0.5 * ADC_PERIOD_NS * DATA_MUX) clk = ~clk;
   end
 
   initial begin
@@ -68,7 +69,6 @@ module cfd_tb;
     rst = 0;
 
     while (!eof_flag) begin
-      // 1. Read a block of DATA_MUX samples directly into the array
       for (i = 0; i < DATA_MUX; i = i + 1) begin
         if (!$feof(fd_in)) begin
           status = $fscanf(fd_in, "%d", val_read);
@@ -86,11 +86,9 @@ module cfd_tb;
 
       @(negedge clk);
 
-      // 2. Write output sequentially to remain compatible with old CSV format
       for (i = 0; i < DATA_MUX; i = i + 1) begin
-        // Zero-crossing detection is commented out for now.
-        // Writing '0' for dout and pulse to maintain 4-column structure.
-        $fdisplay(fd_out, "%0f,%d,%d,0", $realtime + 0.5 * i, din[i], $signed(uut.dout[i]));
+        $fdisplay(fd_out, "%0f,%d,%d,%d", $realtime + ADC_PERIOD_NS * i, din[i],
+                  $signed(uut.dout[i]), pulse[i]);
       end
     end
 

@@ -4,46 +4,51 @@ module cfd #(
     parameter integer SCALE_SHIFT = 1,
     parameter integer DATA_MUX = 16
 ) (
-    input  wire                 clk,
-    input  wire                 rst,
-    input  wire [BIT_WIDTH-1:0] din [DATA_MUX],
-    output reg  [  BIT_WIDTH:0] dout[DATA_MUX]
+    input  wire                       clk,
+    input  wire                       rst,
+    input  wire       [BIT_WIDTH-1:0] din [DATA_MUX],
+    output reg signed [  BIT_WIDTH:0] dout[DATA_MUX]
 );
-  wire [BIT_WIDTH-1:0] delayed[DATA_MUX];
-  reg [BIT_WIDTH-1:0] scaled[DATA_MUX];
+  // Data from previous iteration used in delay computations
+  reg [BIT_WIDTH-1:0] prev_iter_data[DELAY];
+  // Data from current iteration with prepended delay samples
+  reg [BIT_WIDTH-1:0] buff[DELAY+DATA_MUX];
 
-  // Delayed / scaled path
-  reg [BIT_WIDTH-1:0] shift_reg[DATA_MUX+DELAY];
   integer i;
   always @(posedge clk) begin
     if (rst) begin
+      for (i = 0; i < DELAY; i = i + 1) begin
+        prev_iter_data[i] <= 0;
+      end
       for (i = 0; i < DATA_MUX + DELAY; i = i + 1) begin
-        shift_reg[i] <= {BIT_WIDTH{1'b0}};
+        buff[i] <= 0;
       end
     end else begin
-      for (i = 0; i < DATA_MUX; i = i + 1) begin
-        shift_reg[i] <= din[i];
-        scaled[i] <= din[i] >> SCALE_SHIFT;
+      // Previous iteration samples at start of buffer
+      for (i = 0; i < DELAY; i = i + 1) begin
+        buff[i] <= prev_iter_data[i];
       end
-      for (i = DATA_MUX; i < DATA_MUX + DELAY; i = i + 1) begin
-        shift_reg[i] <= shift_reg[i-DATA_MUX];
+      // Current iteration samples
+      for (i = 0; i < DATA_MUX; i = i + 1) begin
+        buff[DELAY+i] <= din[i];
+      end
+      // Last current iteration samples as previous samples
+      for (i = 0; i < DELAY; i = i + 1) begin
+        prev_iter_data[i] <= din[DATA_MUX-DELAY+i];  // DELAY < DATA_MUX (TODO: generalize)
       end
     end
   end
 
-  // genvar j;
-  // generate
-  //   for (j = 0; j < DATA_MUX; j = j + 1) assign delayed[j] = shift_reg[j];
-  // endgenerate
-  assign delayed = shift_reg[DELAY:DATA_MUX+DELAY-1];
-
-  // Summation
+  integer j;
   always @(posedge clk) begin
     if (rst) begin
-      for (i = 0; i < DATA_MUX; i = i + 1) dout[i] <= 0;
+      for (j = 0; j < DATA_MUX; j = j + 1) begin
+        dout[j] <= 0;
+      end
     end else begin
-      for (i = 0; i < DATA_MUX; i = i + 1) begin
-        dout[i] <= $signed({1'b0, delayed[i]}) - $signed({1'b0, scaled[i]});
+      for (j = 0; j < DATA_MUX; j = j + 1) begin
+        dout[j] <= $signed({1'b0, buff[j]}) -
+            $signed({1'b0, buff[DELAY+j] >> SCALE_SHIFT});  // TODO: correct scaling
       end
     end
   end

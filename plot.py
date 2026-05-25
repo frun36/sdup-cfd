@@ -2,24 +2,26 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('output.csv', sep=',')
+ADC_PERIOD_NS = 0.5
+DATA_MUX = 16
+CLK_PERIOD_NS = ADC_PERIOD_NS * DATA_MUX  # (4ns = 125 MHz)
 
-t = df['time_ns']
-din = df['din']
-dout = df['dout']
-pulse = df['pulse']
+df = pd.read_csv("output.csv", sep=",")
 
+t = df["time_ns"]
+din = df["din"]
+dout = df["dout"]  # delayed by 1 clk cycle
+pulse = df["pulse"]  # delayed by 2 clk cycles
 
-for x, p in zip(t, pulse):
-    if p == 1:
-        plt.axvline(x=x, color='green')
+plt.plot(t, din, label="p", color="blue")
+plt.plot(t - CLK_PERIOD_NS, dout, label="sum", color="purple", linestyle="--")
+for timestamp, is_pulse in zip(t, pulse):
+    if is_pulse == 1:
+        plt.axvline(x=timestamp - 2 * CLK_PERIOD_NS, color="green")
 x_max = int(np.max(t))
 
-plt.plot(t, din, label='p', color='blue')
-plt.plot(t, dout, label='sum', color='purple', linestyle='--')
-
-plt.xlabel('t')
-plt.ylabel('V')
+plt.xlabel("t")
+plt.ylabel("V")
 plt.legend()
 plt.grid(True)
 

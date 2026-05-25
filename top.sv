@@ -1,18 +1,18 @@
 `timescale 1ns / 1ps
 
 module top #(
-    parameter BIT_WIDTH = 12,
-    parameter DELAY = 10,
-    parameter SCALE_SHIFT = 1,
-    parameter CFD_THR = 0,
-    parameter DATA_MUX = 16
+    parameter integer BIT_WIDTH = 12,
+    parameter integer DELAY = 10,
+    parameter integer SCALE_SHIFT = 1,
+    parameter integer CFD_THR = 0,
+    parameter integer DATA_MUX = 16
 ) (
     input  wire                 clk,
     input  wire                 rst,
     input  wire [BIT_WIDTH-1:0] din  [DATA_MUX],
-    output wire                 pulse
+    output wire                 pulse[DATA_MUX]
 );
-  wire [BIT_WIDTH:0] dout[DATA_MUX];
+  wire signed [BIT_WIDTH:0] dout[DATA_MUX];
 
   cfd #(
       .BIT_WIDTH(BIT_WIDTH),
@@ -26,17 +26,13 @@ module top #(
       .dout(dout)
   );
 
-  // zero_crossing_detector #(
-  //     .BIT_WIDTH(BIT_WIDTH),
-  //     .THRESHOLD(CFD_THR)
-  // ) uut_zcd (
-  //     .clk(clk),
-  //     .rst(rst),
-  //     .data_in($signed(dout)),
-  //     .zc_pulse(zc_pulse),
-  //     .state_pos(state_pos)
-  // );
-  //
-  // assign pulse = zc_pulse & state_pos;
-  assign pulse = 0;
+  zero_crossing_detector #(
+      .BIT_WIDTH(BIT_WIDTH),
+      .THRESHOLD(CFD_THR)
+  ) uut_zcd (
+      .clk(clk),
+      .rst(rst),
+      .din(dout),
+      .zc_pulse(pulse)
+  );
 endmodule
