@@ -5,6 +5,6 @@
 ## Run simulation
 CFD module only (use `plot.py` to preview the output values of the CFD, with noise-immune zero-crossing detector).
 ```
-iverilog -o cfd_sim.vvp cfd.v cfd_tb.v top.v zero_crossing_detector.v
-vvp cfd_sim.vvp
+verilator --binary --timing --timescale 1ns/1ps -Wno-fatal cfd_tb.sv top.sv zero_crossing_detector.sv
+obj_dir/Vcfd_tb
 ```
