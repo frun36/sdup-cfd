@@ -4,7 +4,8 @@ module cfd_tb;
   parameter integer BIT_WIDTH = 12;
   parameter integer DELAY = 4;
   parameter integer SCALE_SHIFT = 1;
-  parameter integer CFD_THR = 100;
+  parameter integer CFD_THRESHOLD = 100;
+  parameter integer CFD_ZERO = 0;
   parameter integer DATA_MUX = 16;
   parameter real ADC_PERIOD_NS = 0.5;
 
@@ -26,7 +27,8 @@ module cfd_tb;
       .BIT_WIDTH(BIT_WIDTH),
       .DELAY(DELAY),
       .SCALE_SHIFT(SCALE_SHIFT),
-      .CFD_THR(CFD_THR),
+      .CFD_THRESHOLD(CFD_THRESHOLD),
+      .CFD_ZERO(CFD_ZERO),
       .DATA_MUX(DATA_MUX)
   ) uut (
       .clk  (clk),

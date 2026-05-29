@@ -4,7 +4,8 @@ module top #(
     parameter integer BIT_WIDTH = 12,
     parameter integer DELAY = 10,
     parameter integer SCALE_SHIFT = 1,
-    parameter integer CFD_THR = 0,
+    parameter integer CFD_THRESHOLD = 0,
+    parameter integer CFD_ZERO = 0,
     parameter integer DATA_MUX = 16
 ) (
     input  wire                 clk,
@@ -28,7 +29,8 @@ module top #(
 
   zero_crossing_detector #(
       .BIT_WIDTH(BIT_WIDTH),
-      .THRESHOLD(CFD_THR)
+      .CFD_THRESHOLD(CFD_THRESHOLD),
+      .CFD_ZERO(CFD_ZERO)
   ) uut_zcd (
       .clk(clk),
       .rst(rst),

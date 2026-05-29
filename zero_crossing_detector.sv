@@ -2,7 +2,8 @@
 
 module zero_crossing_detector #(
     parameter integer BIT_WIDTH = 12,
-    parameter signed [BIT_WIDTH:0] THRESHOLD = 0,  // hysteresis for noise immunity
+    parameter signed [BIT_WIDTH:0] CFD_THRESHOLD = 0,  // hysteresis for noise immunity
+    parameter signed [BIT_WIDTH:0] CFD_ZERO = 0, // detects CFD_ZERO crossing
     parameter integer DATA_MUX = 16
 ) (
     input wire clk,
@@ -16,8 +17,8 @@ module zero_crossing_detector #(
   genvar i;
   generate
     for (i = 0; i < DATA_MUX; i = i + 1) begin : gen_comparators
-      assign is_above[i] = $signed(din[i]) >= THRESHOLD;
-      assign is_below[i] = $signed(din[i]) <= -THRESHOLD;
+      assign is_above[i] = $signed(din[i]) >= CFD_ZERO + CFD_THRESHOLD;
+      assign is_below[i] = $signed(din[i]) <= CFD_ZERO - CFD_THRESHOLD;
     end
   endgenerate
 
