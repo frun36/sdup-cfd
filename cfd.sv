@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module cfd #(
     parameter integer BIT_WIDTH_IN = 12, // Input signal (ADC) bit width
     parameter integer DELAY = 10,
@@ -16,10 +18,6 @@ module cfd #(
   reg [BIT_WIDTH_IN-1:0] prev_iter_data[DELAY];
   // Data from current iteration with prepended delay samples
   reg [BIT_WIDTH_IN-1:0] buff[DELAY+DATA_MUX];
-
-  // Temporary variables for delayed and inverted samples of the CFD
-  reg signed [BIT_WIDTH_OUT-1:0] d_delayed;
-  reg signed [BIT_WIDTH_OUT-1:0] d_inverted;
 
   integer i;
   always @(posedge clk) begin
@@ -54,10 +52,13 @@ module cfd #(
       end
     end else begin
       for (j = 0; j < DATA_MUX; j = j + 1) begin
-        d_delayed = buff[j] * SCALE_MULT;
-        d_inverted = buff[DELAY+j] * SCALE_DIV;
+        logic [BIT_WIDTH_OUT-1:0] d_delayed;
+        logic [BIT_WIDTH_OUT-1:0] d_inverted;
 
-        dout[j] <= $signed({1'b0, d_delayed}) - $signed({1'b0, d_inverted});
+        d_delayed = (BIT_WIDTH_OUT)'(buff[j] * SCALE_MULT);
+        d_inverted = (BIT_WIDTH_OUT)'(buff[DELAY+j] * SCALE_DIV);
+
+        dout[j] = $signed({1'b0, d_delayed}) - $signed({1'b0, d_inverted});
       end
     end
   end

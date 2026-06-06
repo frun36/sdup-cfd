@@ -10,15 +10,18 @@ module cfd_tb;
   parameter integer SCALE_DIV = 8; // has to be a power of 2
   parameter integer SCALE_MULT = 11; // has to be lower than 2*SCALE_DIV
   parameter integer BIT_WIDTH_OUT = BIT_WIDTH_IN + $clog2(SCALE_DIV) + 1; // Allow for maximum multiply of 2.0
+  parameter integer FPGA_TIME_WIDTH = 16; // Counting FPGA clock cycles, DATA_MUX bit width is added to get width of sample time
 
   parameter real ADC_PERIOD_NS = 0.5;
 
   reg                     clk;
   reg                     rst;
+  reg                     lhc_clk;
 
   // SystemVerilog Unpacked Arrays for ports
-  reg     [BIT_WIDTH_IN-1:0] din      [DATA_MUX];
+  reg  [BIT_WIDTH_IN-1:0] din      [DATA_MUX];
   wire                    pulse    [DATA_MUX];
+  wire [FPGA_TIME_WIDTH+$clog2(DATA_MUX)-1:0] sample_time [DATA_MUX];
 
   reg signed [BIT_WIDTH_OUT:0] cfd_threshold;
   reg signed [BIT_WIDTH_OUT:0] cfd_zero;
@@ -36,14 +39,17 @@ module cfd_tb;
       .DELAY(DELAY),
       .SCALE_DIV(SCALE_DIV),
       .SCALE_MULT(SCALE_MULT),
-      .BIT_WIDTH_OUT(BIT_WIDTH_OUT)
+      .BIT_WIDTH_OUT(BIT_WIDTH_OUT),
+      .FPGA_TIME_WIDTH(FPGA_TIME_WIDTH)
   ) uut (
       .clk           (clk),
       .rst           (rst),
+      .lhc_clk       (lhc_clk),
       .din           (din),
       .cfd_threshold (cfd_threshold),
       .cfd_zero      (cfd_zero),
-      .pulse         (pulse)
+      .pulse         (pulse),
+      .sample_time   (sample_time)
   );
 
   // Clock (2GHz / DATA_MUX = 125MHz)
@@ -101,7 +107,7 @@ module cfd_tb;
       @(negedge clk);
 
       for (i = 0; i < DATA_MUX; i = i + 1) begin
-        $fdisplay(fd_out, "%0f,%d,%d,%d", $realtime + ADC_PERIOD_NS * i, din[i],
+        $fdisplay(fd_out, "%0f,%d,%d,%d", ADC_PERIOD_NS * sample_time[i], din[i],
                   $signed(uut.dout[i])/SCALE_DIV, pulse[i]);
       end
     end
