@@ -2,14 +2,14 @@
 
 module zero_crossing_detector #(
     parameter integer BIT_WIDTH_OUT = 12,
-    parameter signed [BIT_WIDTH_OUT:0] CFD_THRESHOLD = 0,  // hysteresis for noise immunity
-    parameter signed [BIT_WIDTH_OUT:0] CFD_ZERO = 0, // detects CFD_ZERO crossing
     parameter integer DATA_MUX = 16
 ) (
     input wire clk,
     input wire rst,
     input wire signed [BIT_WIDTH_OUT:0] din[DATA_MUX],  // BIT_WIDTH_OUT + 1 for sign
-    output reg zc_pulse[DATA_MUX]  // Pulses high for 1 clock cycle on crossing
+    output reg zc_pulse[DATA_MUX],  // Pulses high for 1 clock cycle on crossing
+    input wire signed [BIT_WIDTH_OUT:0] cfd_threshold,  // hysteresis for noise immunity
+    input wire signed [BIT_WIDTH_OUT:0] cfd_zero // detects cfd_zero crossing
 );
   // Flag samples based on threshold cross
   wire is_above[DATA_MUX];
@@ -17,8 +17,8 @@ module zero_crossing_detector #(
   genvar i;
   generate
     for (i = 0; i < DATA_MUX; i = i + 1) begin : gen_comparators
-      assign is_above[i] = $signed(din[i]) >= CFD_ZERO + CFD_THRESHOLD;
-      assign is_below[i] = $signed(din[i]) <= CFD_ZERO - CFD_THRESHOLD;
+      assign is_above[i] = $signed(din[i]) >= cfd_zero + cfd_threshold;
+      assign is_below[i] = $signed(din[i]) <= cfd_zero - cfd_threshold;
     end
   endgenerate
 

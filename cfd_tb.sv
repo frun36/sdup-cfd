@@ -4,8 +4,8 @@ module cfd_tb;
   parameter integer BIT_WIDTH_IN = 12; // Input signal (ADC) bit width
   parameter integer DATA_MUX = 16;
   parameter integer DELAY = 3;
-  parameter integer CFD_THRESHOLD = 50;
-  parameter integer CFD_ZERO = 0;
+  parameter integer CFD_THRESHOLD = 50; // hysteresis for noise immunity
+  parameter integer CFD_ZERO = 0; // detects cfd_zero crossing
   // Allow for fractional multiplication by having a divisor and multiplier
   parameter integer SCALE_DIV = 8; // has to be a power of 2
   parameter integer SCALE_MULT = 11; // has to be lower than 2*SCALE_DIV
@@ -20,6 +20,9 @@ module cfd_tb;
   reg     [BIT_WIDTH_IN-1:0] din      [DATA_MUX];
   wire                    pulse    [DATA_MUX];
 
+  reg signed [BIT_WIDTH_OUT:0] cfd_threshold;
+  reg signed [BIT_WIDTH_OUT:0] cfd_zero;
+
   integer                 fd_in;
   integer                 fd_out;
   integer                 status;
@@ -31,21 +34,24 @@ module cfd_tb;
       .BIT_WIDTH_IN(BIT_WIDTH_IN),
       .DATA_MUX(DATA_MUX),
       .DELAY(DELAY),
-      .CFD_THRESHOLD(CFD_THRESHOLD),
-      .CFD_ZERO(CFD_ZERO),
       .SCALE_DIV(SCALE_DIV),
       .SCALE_MULT(SCALE_MULT),
       .BIT_WIDTH_OUT(BIT_WIDTH_OUT)
   ) uut (
-      .clk  (clk),
-      .rst  (rst),
-      .din  (din),
-      .pulse(pulse)
+      .clk           (clk),
+      .rst           (rst),
+      .din           (din),
+      .cfd_threshold (cfd_threshold),
+      .cfd_zero      (cfd_zero),
+      .pulse         (pulse)
   );
 
   // Clock (2GHz / DATA_MUX = 125MHz)
   initial begin
     clk = 0;
+    cfd_threshold = CFD_THRESHOLD * SCALE_DIV;
+    cfd_zero = CFD_ZERO * SCALE_DIV;
+
     forever #(0.5 * ADC_PERIOD_NS * DATA_MUX) clk = ~clk;
   end
 
