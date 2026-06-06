@@ -1,19 +1,23 @@
 `timescale 1ns / 1ps
 
 module cfd_tb;
-  parameter integer BIT_WIDTH = 12;
-  parameter integer DELAY = 4;
-  parameter integer SCALE_SHIFT = 1;
-  parameter integer CFD_THRESHOLD = 100;
-  parameter integer CFD_ZERO = 0;
+  parameter integer BIT_WIDTH_IN = 12; // Input signal (ADC) bit width
   parameter integer DATA_MUX = 16;
+  parameter integer DELAY = 3;
+  parameter integer CFD_THRESHOLD = 50;
+  parameter integer CFD_ZERO = 0;
+  // Allow for fractional multiplication by having a divisor and multiplier
+  parameter integer SCALE_DIV = 8; // has to be a power of 2
+  parameter integer SCALE_MULT = 11; // has to be lower than 2*SCALE_DIV
+  parameter integer BIT_WIDTH_OUT = BIT_WIDTH_IN + $clog2(SCALE_DIV) + 1; // Allow for maximum multiply of 2.0
+
   parameter real ADC_PERIOD_NS = 0.5;
 
   reg                     clk;
   reg                     rst;
 
   // SystemVerilog Unpacked Arrays for ports
-  reg     [BIT_WIDTH-1:0] din      [DATA_MUX];
+  reg     [BIT_WIDTH_IN-1:0] din      [DATA_MUX];
   wire                    pulse    [DATA_MUX];
 
   integer                 fd_in;
@@ -24,12 +28,14 @@ module cfd_tb;
   reg                     eof_flag;
 
   top #(
-      .BIT_WIDTH(BIT_WIDTH),
+      .BIT_WIDTH_IN(BIT_WIDTH_IN),
+      .DATA_MUX(DATA_MUX),
       .DELAY(DELAY),
-      .SCALE_SHIFT(SCALE_SHIFT),
       .CFD_THRESHOLD(CFD_THRESHOLD),
       .CFD_ZERO(CFD_ZERO),
-      .DATA_MUX(DATA_MUX)
+      .SCALE_DIV(SCALE_DIV),
+      .SCALE_MULT(SCALE_MULT),
+      .BIT_WIDTH_OUT(BIT_WIDTH_OUT)
   ) uut (
       .clk  (clk),
       .rst  (rst),
@@ -90,7 +96,7 @@ module cfd_tb;
 
       for (i = 0; i < DATA_MUX; i = i + 1) begin
         $fdisplay(fd_out, "%0f,%d,%d,%d", $realtime + ADC_PERIOD_NS * i, din[i],
-                  $signed(uut.dout[i]), pulse[i]);
+                  $signed(uut.dout[i])/SCALE_DIV, pulse[i]);
       end
     end
 

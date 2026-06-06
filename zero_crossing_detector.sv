@@ -1,14 +1,14 @@
 `timescale 1ns / 1ps
 
 module zero_crossing_detector #(
-    parameter integer BIT_WIDTH = 12,
-    parameter signed [BIT_WIDTH:0] CFD_THRESHOLD = 0,  // hysteresis for noise immunity
-    parameter signed [BIT_WIDTH:0] CFD_ZERO = 0, // detects CFD_ZERO crossing
+    parameter integer BIT_WIDTH_OUT = 12,
+    parameter signed [BIT_WIDTH_OUT:0] CFD_THRESHOLD = 0,  // hysteresis for noise immunity
+    parameter signed [BIT_WIDTH_OUT:0] CFD_ZERO = 0, // detects CFD_ZERO crossing
     parameter integer DATA_MUX = 16
 ) (
     input wire clk,
     input wire rst,
-    input wire signed [BIT_WIDTH:0] din[DATA_MUX],  // BIT_WIDTH + 1 for sign
+    input wire signed [BIT_WIDTH_OUT:0] din[DATA_MUX],  // BIT_WIDTH_OUT + 1 for sign
     output reg zc_pulse[DATA_MUX]  // Pulses high for 1 clock cycle on crossing
 );
   // Flag samples based on threshold cross

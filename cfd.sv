@@ -1,18 +1,25 @@
 module cfd #(
-    parameter integer BIT_WIDTH = 12,
+    parameter integer BIT_WIDTH_IN = 12, // Input signal (ADC) bit width
     parameter integer DELAY = 10,
-    parameter integer SCALE_SHIFT = 1,
-    parameter integer DATA_MUX = 16
+    parameter integer DATA_MUX = 16,
+    // Allow for fractional multiplication by having a divisor and multiplier
+    parameter integer SCALE_DIV = 8, // has to be a power of 2
+    parameter integer SCALE_MULT = 11, // has to be lower than 2*SCALE_DIV
+    parameter integer BIT_WIDTH_OUT = BIT_WIDTH_IN + $clog2(SCALE_DIV) + 1 // Allow for maximum multiply of 2.0
 ) (
     input  wire                       clk,
     input  wire                       rst,
-    input  wire       [BIT_WIDTH-1:0] din [DATA_MUX],
-    output reg signed [  BIT_WIDTH:0] dout[DATA_MUX]
+    input  wire       [BIT_WIDTH_IN-1:0] din [DATA_MUX],
+    output reg signed [BIT_WIDTH_OUT:0] dout[DATA_MUX] // One bit more for a sign bit
 );
   // Data from previous iteration used in delay computations
-  reg [BIT_WIDTH-1:0] prev_iter_data[DELAY];
+  reg [BIT_WIDTH_IN-1:0] prev_iter_data[DELAY];
   // Data from current iteration with prepended delay samples
-  reg [BIT_WIDTH-1:0] buff[DELAY+DATA_MUX];
+  reg [BIT_WIDTH_IN-1:0] buff[DELAY+DATA_MUX];
+
+  // Temporary variables for delayed and inverted samples of the CFD
+  reg signed [BIT_WIDTH_OUT-1:0] d_delayed;
+  reg signed [BIT_WIDTH_OUT-1:0] d_inverted;
 
   integer i;
   always @(posedge clk) begin
@@ -47,8 +54,10 @@ module cfd #(
       end
     end else begin
       for (j = 0; j < DATA_MUX; j = j + 1) begin
-        dout[j] <= $signed({1'b0, buff[j]}) -
-            $signed({1'b0, buff[DELAY+j] >> SCALE_SHIFT});  // TODO: correct scaling
+        d_delayed = buff[j] * SCALE_MULT;
+        d_inverted = buff[DELAY+j] * SCALE_DIV;
+
+        dout[j] <= $signed({1'b0, d_delayed}) - $signed({1'b0, d_inverted});
       end
     end
   end
