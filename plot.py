@@ -8,31 +8,22 @@ CLK_PERIOD_NS = ADC_PERIOD_NS * DATA_MUX  # (4ns = 125 MHz)
 
 df = pd.read_csv("output.csv", sep=",")
 
-t = df["time_ns"]
-din = df["din"]
-dout = df["dout"]  # delayed by 1 clk cycle
+t = df.loc[df["zcd_out_valid"] == 1, "timestamp"] * ADC_PERIOD_NS
+din = df.loc[df["din_valid"] == 1, "din"]  # Timestamp based on din, stops when invalid
+dout = df.loc[
+    df["dout_valid"] == 1, "dout"
+]  # Also trims the initial delay of 2*CLK_PERIOD_NS
 
-# # Old pulse logic
-# pulse = df["pulse"]  # delayed by 2 clk cycles
-# for timestamp, is_pulse in zip(t, pulse):
-#     if is_pulse == 1:
-#         plt.axvline(x=timestamp - 2 * CLK_PERIOD_NS, color="green")
+for pulse, timestamp in zip(df["pulse"], df["out_timestamp"]):
+    if pulse == 1:
+        # the timestamp counter is started on ZCD output valid
+        # no post-processing correction is required
+        # only its arrival is delayed (3 FPGA clock cycles)
+        timestamp_ns = (timestamp * ADC_PERIOD_NS)
+        plt.axvline(x=timestamp_ns, color="green")
 
-# New pulse logic
-hits = []
-with open("hits.csv", "r") as f:
-    for line in f:
-        line_stripped = line.strip()
-        if line_stripped != "":
-            hits.append(int(line_stripped))
-
-for timestamp in hits:
-    timestamp_ns = (timestamp * ADC_PERIOD_NS)
-    plt.axvline(x=timestamp_ns, color="green")
-
-
-plt.plot(t, din, label="p", color="blue")
-plt.plot(t - CLK_PERIOD_NS, dout, label="sum", color="purple", linestyle="--")
+plt.plot(t, din[:len(t)], label="p", color="blue")
+plt.plot(t, dout[:len(t)], label="sum", color="purple", linestyle="--")
 x_max = int(np.max(t))
 
 plt.xlabel("t")

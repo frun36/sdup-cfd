@@ -6,10 +6,12 @@ module zero_crossing_detector #(
 ) (
     input wire clk,
     input wire rst,
+    input wire din_valid,
     input wire signed [BIT_WIDTH_OUT:0] din[DATA_MUX],  // BIT_WIDTH_OUT + 1 for sign
+    output reg out_valid,
     output reg zc_pulse[DATA_MUX],  // Pulses high for 1 clock cycle on crossing
     input wire signed [BIT_WIDTH_OUT:0] cfd_threshold,  // hysteresis for noise immunity
-    input wire signed [BIT_WIDTH_OUT:0] cfd_zero // detects cfd_zero crossing
+    input wire signed [BIT_WIDTH_OUT:0] cfd_zero  // detects cfd_zero crossing
 );
   // Flag samples based on threshold cross
   wire is_above[DATA_MUX];
@@ -37,16 +39,20 @@ module zero_crossing_detector #(
   integer k;
   always @(posedge clk) begin
     if (rst) begin
+      out_valid <= 0;
       prev_packet_state <= 1'b0;
       for (k = 0; k < DATA_MUX; k = k + 1) zc_pulse[k] <= 1'b0;
     end else begin
-      // Save the very last state for the next clock cycle
-      prev_packet_state <= state_ripple[DATA_MUX-1];
+      out_valid <= din_valid;
+      if (din_valid) begin
+        // Save the very last state for the next clock cycle
+        prev_packet_state <= state_ripple[DATA_MUX-1];
 
-      // Output a 1-cycle flag on a Low-to-High crossing
-      zc_pulse[0] <= (state_ripple[0] == 1'b1) && (prev_packet_state == 1'b0);
-      for (k = 1; k < DATA_MUX; k = k + 1) begin
-        zc_pulse[k] <= (state_ripple[k] == 1'b1) && (state_ripple[k-1] == 1'b0);
+        // Output a 1-cycle flag on a Low-to-High crossing
+        zc_pulse[0] <= (state_ripple[0] == 1'b1) && (prev_packet_state == 1'b0);
+        for (k = 1; k < DATA_MUX; k = k + 1) begin
+          zc_pulse[k] <= (state_ripple[k] == 1'b1) && (state_ripple[k-1] == 1'b0);
+        end
       end
     end
   end

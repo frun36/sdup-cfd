@@ -15,16 +15,20 @@ module cfd_top #(
     input wire clk,
     input wire rst,
     input wire lhc_clk,
+    input wire din_valid,
     input wire [BIT_WIDTH_IN-1:0] din[DATA_MUX],
     input wire signed [BIT_WIDTH_OUT:0] cfd_threshold,  // hysteresis for noise immunity
     input wire signed [BIT_WIDTH_OUT:0] cfd_zero,  // detects cfd_zero crossing
     output reg pulse,
-    output reg [uut_tdc.TIMESTAMP_WIDTH-1:0] sample_time
+    output reg [uut_tdc.TIMESTAMP_WIDTH-1:0] timestamp
 );
   wire signed [BIT_WIDTH_OUT:0] dout[DATA_MUX];  // One bit more for a sign bit
 
+  wire cfd_dout_valid;
+  wire zcd_out_valid;
+
   wire pulses[DATA_MUX];
-  wire [uut_tdc.TIMESTAMP_WIDTH-1:0] sample_times[DATA_MUX];
+  wire [uut_tdc.TIMESTAMP_WIDTH-1:0] timestamps[DATA_MUX];
 
   cfd #(
       .BIT_WIDTH_IN(BIT_WIDTH_IN),
@@ -34,9 +38,11 @@ module cfd_top #(
       .SCALE_MULT(SCALE_MULT),
       .BIT_WIDTH_OUT(BIT_WIDTH_OUT)
   ) uut_cfd (
-      .clk (clk),
-      .rst (rst),
-      .din (din),
+      .clk(clk),
+      .rst(rst),
+      .din_valid(din_valid),
+      .din(din),
+      .dout_valid(cfd_dout_valid),
       .dout(dout)
   );
 
@@ -46,7 +52,9 @@ module cfd_top #(
   ) uut_zcd (
       .clk(clk),
       .rst(rst),
+      .din_valid(cfd_dout_valid),
       .din(dout),
+      .out_valid(zcd_out_valid),
       .cfd_threshold(cfd_threshold),
       .cfd_zero(cfd_zero),
       .zc_pulse(pulses)
@@ -59,8 +67,9 @@ module cfd_top #(
   ) uut_tdc (
       .clk(clk),
       .rst(rst),
+      .din_valid(zcd_out_valid),
       .lhc_clk(lhc_clk),
-      .sample_time(sample_times)
+      .timestamps(timestamps)
   );
 
 
@@ -68,13 +77,15 @@ module cfd_top #(
   integer i;
   always_comb begin
     pulse = 1'b0;
-    sample_time = '0;
+    timestamp = '0;
 
-    // Loop backwards - lowest index has priority
-    for (i = DATA_MUX - 1; i >= 0; i--) begin
-      if (pulses[i]) begin
-        pulse = 1'b1;
-        sample_time = sample_times[i];
+    if (zcd_out_valid) begin
+      // Loop backwards - lowest index has priority
+      for (i = DATA_MUX - 1; i >= 0; i--) begin
+        if (pulses[i]) begin
+          pulse = 1'b1;
+          timestamp = timestamps[i];
+        end
       end
     end
   end

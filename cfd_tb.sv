@@ -18,19 +18,19 @@ module cfd_tb;
 
   reg                                          clk;
   reg                                          rst;
-  reg                                          lhc_clk;
+  reg                                          lhc_clk = 1'b0;
 
   // SystemVerilog Unpacked Arrays for ports
-  reg        [               BIT_WIDTH_IN-1:0] din           [DATA_MUX];
+  reg                                          din_valid;
+  reg        [               BIT_WIDTH_IN-1:0] din            [DATA_MUX];
   wire                                         pulse;
-  wire       [uut.uut_tdc.TIMESTAMP_WIDTH-1:0] sample_time;
+  wire       [uut.uut_tdc.TIMESTAMP_WIDTH-1:0] timestamp;
 
   reg signed [                BIT_WIDTH_OUT:0] cfd_threshold;
   reg signed [                BIT_WIDTH_OUT:0] cfd_zero;
 
   integer                                      fd_in;
   integer                                      fd_out;
-  integer                                      fd_hits;
   integer                                      status;
   integer                                      val_read;
   integer                                      i;
@@ -48,11 +48,12 @@ module cfd_tb;
       .clk          (clk),
       .rst          (rst),
       .lhc_clk      (lhc_clk),
+      .din_valid    (din_valid),
       .din          (din),
       .cfd_threshold(cfd_threshold),
       .cfd_zero     (cfd_zero),
       .pulse        (pulse),
-      .sample_time  (sample_time)
+      .timestamp    (timestamp)
   );
 
   // Clock (2GHz / DATA_MUX = 125MHz)
@@ -64,27 +65,24 @@ module cfd_tb;
     forever #(0.5 * ADC_PERIOD_NS * DATA_MUX) clk = ~clk;
   end
 
+  // File setup
   initial begin
-    // Input
-    fd_in = $fopen("input.csv", "r");
+    fd_in  = $fopen("input.csv", "r");
+    fd_out = $fopen("output.csv", "w");
     if (fd_in == 0) begin
       $display("Error: Could not open input.csv");
       $finish;
     end
-
-    // Output
-    fd_out  = $fopen("output.csv", "w");
-    fd_hits = $fopen("hits.csv", "w");
     if (fd_out == 0) begin
       $display("Error: Could not create output.csv");
       $finish;
     end
-    if (fd_hits == 0) begin
-      $display("Error: Could not create hits.csv");
-      $finish;
-    end
-    $fdisplay(fd_out, "time_ns,din,dout,pulse");
+    $fdisplay(fd_out,
+              "realtime,timestamp,din_valid,din,dout_valid,dout,zcd_out_valid,pulse,out_timestamp");
+  end
 
+  // Input and sim control
+  initial begin
     rst = 1;
     eof_flag = 0;
 
@@ -97,6 +95,13 @@ module cfd_tb;
     rst = 0;
 
     while (!eof_flag) begin
+      if ($urandom_range(0, 99) < 20) begin  // 20% chance for break in data
+        din_valid = 1'b0;
+        repeat ($urandom_range(1, 2)) @(negedge clk);  // 1 to 4 cycles break
+      end
+
+      din_valid = 1'b1;
+
       for (i = 0; i < DATA_MUX; i = i + 1) begin
         if (!$feof(fd_in)) begin
           status = $fscanf(fd_in, "%d", val_read);
@@ -113,31 +118,21 @@ module cfd_tb;
       end
 
       @(negedge clk);
-
-      for (i = 0; i < DATA_MUX; i = i + 1) begin
-        $fdisplay(fd_out, "%0f,%d,%d,0", $realtime + ADC_PERIOD_NS * i, din[i], (32)'($signed
-                  (uut.dout[i])) / SCALE_DIV);
-      end
-
-      if (pulse) $fdisplay(fd_hits, "%d", sample_time);
-    end
-
-    // Flush out the delay pipeline
-    repeat (DELAY + 2) begin
-      for (i = 0; i < DATA_MUX; i = i + 1) begin
-        din[i] = 0;
-      end
-
-      @(negedge clk);
-
-      for (i = 0; i < DATA_MUX; i = i + 1) begin
-        $fdisplay(fd_out, "%0f,0,0,0", $realtime);
-      end
     end
 
     $fclose(fd_in);
     $fclose(fd_out);
-    $display("DONE (see output.csv)");
+    $display("DONE");
     $finish;
+  end
+
+  // Output
+  always @(negedge clk) begin
+    if (!rst)
+      for (int k = 0; k < DATA_MUX; k = k + 1) begin
+        $fdisplay(fd_out, "%0f,%d,%d,%d,%d,%d,%d,%d,%d", $realtime + ADC_PERIOD_NS * k,
+                  uut.timestamps[k], uut.din_valid, uut.din[k], uut.cfd_dout_valid, (32)'($signed
+                  (uut.dout[k])) / SCALE_DIV, uut.zcd_out_valid, pulse, timestamp);
+      end
   end
 endmodule
