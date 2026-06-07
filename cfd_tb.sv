@@ -1,39 +1,42 @@
 `timescale 1ns / 1ps
 
 module cfd_tb;
-  parameter integer BIT_WIDTH_IN = 12; // Input signal (ADC) bit width
+  parameter integer BIT_WIDTH_IN = 12;  // Input signal (ADC) bit width
   parameter integer DATA_MUX = 16;
   parameter integer DELAY = 3;
-  parameter integer CFD_THRESHOLD = 50; // hysteresis for noise immunity
-  parameter integer CFD_ZERO = 0; // detects cfd_zero crossing
+  parameter integer CFD_THRESHOLD = 50;  // hysteresis for noise immunity
+  parameter integer CFD_ZERO = 0;  // detects cfd_zero crossing
   // Allow for fractional multiplication by having a divisor and multiplier
-  parameter integer SCALE_DIV = 8; // has to be a power of 2
-  parameter integer SCALE_MULT = 11; // has to be lower than 2*SCALE_DIV
-  parameter integer BIT_WIDTH_OUT = BIT_WIDTH_IN + $clog2(SCALE_DIV) + 1; // Allow for maximum multiply of 2.0
-  parameter integer FPGA_TIME_WIDTH = 16; // Counting FPGA clock cycles, DATA_MUX bit width is added to get width of sample time
+  parameter integer SCALE_DIV = 8;  // has to be a power of 2
+  parameter integer SCALE_MULT = 11;  // has to be lower than 2*SCALE_DIV
+  parameter integer BIT_WIDTH_OUT = BIT_WIDTH_IN + $clog2(
+      SCALE_DIV
+  ) + 1;  // Allow for maximum multiply of 2.0
+  parameter integer FPGA_TIME_WIDTH = 16;  // DATA_MUX bit width is added to timestamp width
 
   parameter real ADC_PERIOD_NS = 0.5;
 
-  reg                     clk;
-  reg                     rst;
-  reg                     lhc_clk;
+  reg                                          clk;
+  reg                                          rst;
+  reg                                          lhc_clk;
 
   // SystemVerilog Unpacked Arrays for ports
-  reg  [BIT_WIDTH_IN-1:0] din      [DATA_MUX];
-  wire                    pulse    [DATA_MUX];
-  wire [FPGA_TIME_WIDTH+$clog2(DATA_MUX)-1:0] sample_time [DATA_MUX];
+  reg        [               BIT_WIDTH_IN-1:0] din           [DATA_MUX];
+  wire                                         pulse;
+  wire       [uut.uut_tdc.TIMESTAMP_WIDTH-1:0] sample_time;
 
-  reg signed [BIT_WIDTH_OUT:0] cfd_threshold;
-  reg signed [BIT_WIDTH_OUT:0] cfd_zero;
+  reg signed [                BIT_WIDTH_OUT:0] cfd_threshold;
+  reg signed [                BIT_WIDTH_OUT:0] cfd_zero;
 
-  integer                 fd_in;
-  integer                 fd_out;
-  integer                 status;
-  integer                 val_read;
-  integer                 i;
-  reg                     eof_flag;
+  integer                                      fd_in;
+  integer                                      fd_out;
+  integer                                      fd_hits;
+  integer                                      status;
+  integer                                      val_read;
+  integer                                      i;
+  reg                                          eof_flag;
 
-  top #(
+  cfd_top #(
       .BIT_WIDTH_IN(BIT_WIDTH_IN),
       .DATA_MUX(DATA_MUX),
       .DELAY(DELAY),
@@ -42,21 +45,21 @@ module cfd_tb;
       .BIT_WIDTH_OUT(BIT_WIDTH_OUT),
       .FPGA_TIME_WIDTH(FPGA_TIME_WIDTH)
   ) uut (
-      .clk           (clk),
-      .rst           (rst),
-      .lhc_clk       (lhc_clk),
-      .din           (din),
-      .cfd_threshold (cfd_threshold),
-      .cfd_zero      (cfd_zero),
-      .pulse         (pulse),
-      .sample_time   (sample_time)
+      .clk          (clk),
+      .rst          (rst),
+      .lhc_clk      (lhc_clk),
+      .din          (din),
+      .cfd_threshold(cfd_threshold),
+      .cfd_zero     (cfd_zero),
+      .pulse        (pulse),
+      .sample_time  (sample_time)
   );
 
   // Clock (2GHz / DATA_MUX = 125MHz)
   initial begin
     clk = 0;
-    cfd_threshold = CFD_THRESHOLD * SCALE_DIV;
-    cfd_zero = CFD_ZERO * SCALE_DIV;
+    cfd_threshold = (BIT_WIDTH_OUT + 1)'(CFD_THRESHOLD * SCALE_DIV);
+    cfd_zero = (BIT_WIDTH_OUT + 1)'(CFD_ZERO * SCALE_DIV);
 
     forever #(0.5 * ADC_PERIOD_NS * DATA_MUX) clk = ~clk;
   end
@@ -70,9 +73,14 @@ module cfd_tb;
     end
 
     // Output
-    fd_out = $fopen("output.csv", "w");
+    fd_out  = $fopen("output.csv", "w");
+    fd_hits = $fopen("hits.csv", "w");
     if (fd_out == 0) begin
       $display("Error: Could not create output.csv");
+      $finish;
+    end
+    if (fd_hits == 0) begin
+      $display("Error: Could not create hits.csv");
       $finish;
     end
     $fdisplay(fd_out, "time_ns,din,dout,pulse");
@@ -107,9 +115,11 @@ module cfd_tb;
       @(negedge clk);
 
       for (i = 0; i < DATA_MUX; i = i + 1) begin
-        $fdisplay(fd_out, "%0f,%d,%d,%d", ADC_PERIOD_NS * sample_time[i], din[i],
-                  $signed(uut.dout[i])/SCALE_DIV, pulse[i]);
+        $fdisplay(fd_out, "%0f,%d,%d,0", $realtime + ADC_PERIOD_NS * i, din[i], (32)'($signed
+                  (uut.dout[i])) / SCALE_DIV);
       end
+
+      if (pulse) $fdisplay(fd_hits, "%d", sample_time);
     end
 
     // Flush out the delay pipeline

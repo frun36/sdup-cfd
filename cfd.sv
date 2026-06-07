@@ -58,7 +58,7 @@ module cfd #(
         d_delayed = (BIT_WIDTH_OUT)'(buff[j] * SCALE_MULT);
         d_inverted = (BIT_WIDTH_OUT)'(buff[DELAY+j] * SCALE_DIV);
 
-        dout[j] = $signed({1'b0, d_delayed}) - $signed({1'b0, d_inverted});
+        dout[j] <= $signed({1'b0, d_delayed}) - $signed({1'b0, d_inverted});
       end
     end
   end
