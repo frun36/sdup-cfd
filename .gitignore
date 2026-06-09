@@ -1,3 +1,2 @@
 obj_dir/
-output.csv
-hits.csv
+**/output.csv
