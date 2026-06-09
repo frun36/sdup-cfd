@@ -10,7 +10,8 @@ module cfd_top #(
     parameter integer BIT_WIDTH_OUT = BIT_WIDTH_IN + $clog2(
         SCALE_DIV
     ) + 1,  // Maximum multiply by 2
-    parameter integer FPGA_TIME_WIDTH = 16  // DATA_MUX bit width will be added to timestamp width
+    parameter integer FPGA_TIME_WIDTH = 16,  // DATA_MUX bit width will be added to timestamp width
+    localparam integer TIMESTAMP_WIDTH = FPGA_TIME_WIDTH + $clog2(DATA_MUX)
 ) (
     input wire clk,
     input wire rst,
@@ -20,7 +21,7 @@ module cfd_top #(
     input wire signed [BIT_WIDTH_OUT:0] cfd_threshold,  // hysteresis for noise immunity
     input wire signed [BIT_WIDTH_OUT:0] cfd_zero,  // detects cfd_zero crossing
     output reg pulse,
-    output reg [uut_tdc.TIMESTAMP_WIDTH-1:0] timestamp
+    output reg [TIMESTAMP_WIDTH-1:0] timestamp
 );
   wire signed [BIT_WIDTH_OUT:0] dout[DATA_MUX];  // One bit more for a sign bit
 
@@ -28,7 +29,7 @@ module cfd_top #(
   wire zcd_out_valid;
 
   wire pulses[DATA_MUX];
-  wire [uut_tdc.TIMESTAMP_WIDTH-1:0] timestamps[DATA_MUX];
+  wire [TIMESTAMP_WIDTH-1:0] timestamps[DATA_MUX];
 
   cfd #(
       .BIT_WIDTH_IN(BIT_WIDTH_IN),

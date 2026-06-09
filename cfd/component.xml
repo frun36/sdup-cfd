@@ -87,7 +87,7 @@
       <spirit:parameters>
         <spirit:parameter>
           <spirit:name>POLARITY</spirit:name>
-          <spirit:value spirit:id="BUSIFPARAM_VALUE.ARESETN.POLARITY" spirit:choiceRef="choice_list_74b5137e">ACTIVE_LOW</spirit:value>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.ARESETN.POLARITY" spirit:choiceRef="choice_list_9d8b0d81">ACTIVE_LOW</spirit:value>
         </spirit:parameter>
       </spirit:parameters>
     </spirit:busInterface>
@@ -128,7 +128,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>90680935</spirit:value>
+            <spirit:value>25fcc377</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -144,7 +144,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>90680935</spirit:value>
+            <spirit:value>25fcc377</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -374,7 +374,7 @@
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>BIT_WIDTH_OUT</spirit:name>
         <spirit:displayName>Bit Width Out</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.BIT_WIDTH_OUT" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.BIT_WIDTH_IN&apos;)) + spirit:ceil(spirit:log(2,spirit:decode(id(&apos;MODELPARAM_VALUE.SCALE_DIV&apos;))))) + 1)">16</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="dependent" spirit:id="MODELPARAM_VALUE.BIT_WIDTH_OUT" spirit:dependency="((spirit:decode(id(&apos;MODELPARAM_VALUE.BIT_WIDTH_IN&apos;)) + spirit:ceil(spirit:log(2,spirit:decode(id(&apos;MODELPARAM_VALUE.SCALE_DIV&apos;))))) + 1)">16</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>FPGA_TIME_WIDTH</spirit:name>
@@ -384,7 +384,7 @@
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>S_AXIS_TDATA_WIDTH</spirit:name>
         <spirit:displayName>S Axis Tdata Width</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.S_AXIS_TDATA_WIDTH" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.BIT_WIDTH_IN&apos;)) * spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_MUX&apos;)))">192</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="dependent" spirit:id="MODELPARAM_VALUE.S_AXIS_TDATA_WIDTH" spirit:dependency="(spirit:decode(id(&apos;MODELPARAM_VALUE.BIT_WIDTH_IN&apos;)) * spirit:decode(id(&apos;MODELPARAM_VALUE.DATA_MUX&apos;)))">192</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>M_AXIS_TDATA_WIDTH</spirit:name>
@@ -395,7 +395,7 @@
   </spirit:model>
   <spirit:choices>
     <spirit:choice>
-      <spirit:name>choice_list_74b5137e</spirit:name>
+      <spirit:name>choice_list_9d8b0d81</spirit:name>
       <spirit:enumeration>ACTIVE_HIGH</spirit:enumeration>
       <spirit:enumeration>ACTIVE_LOW</spirit:enumeration>
     </spirit:choice>
@@ -551,15 +551,15 @@
       </xilinx:taxonomies>
       <xilinx:displayName>cfd_axis_wrapper_v1_0</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
-      <xilinx:coreRevision>2</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2026-06-09T13:49:20Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>3</xilinx:coreRevision>
+      <xilinx:coreCreationDateTime>2026-06-09T16:51:40Z</xilinx:coreCreationDateTime>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2022.1</xilinx:xilinxVersion>
-      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="158f9587"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="c94f389b"/>
+      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="c6d2d117"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="fb1aa394"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="dbc6f34c"/>
-      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="547a07da"/>
+      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="0e13aa6d"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="b774930c"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
