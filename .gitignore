@@ -1,0 +1,19 @@
+obj_dir/
+**/output.csv
+
+# Ignore Vivado project
+*.xpr
+*.log
+*.jou
+*.str
+.Xil/
+*.runs/
+*.sim/
+*.hw/
+*.ip_user_files/
+*.cache/
+*.hbs
+*.hwh
+*.bit
+*.gen/
+*.srcs/
